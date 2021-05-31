@@ -3,6 +3,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const errorHandler = require('./middlewares/errorHandler');
 
+const { PORT } = process.env;
+
 mongoose.connect('mongodb://localhost:27017/error-database',
   {
     useNewUrlParser: true,
@@ -10,7 +12,6 @@ mongoose.connect('mongodb://localhost:27017/error-database',
     useFindAndModify: false,
     useUnifiedTopology: true,
   });
-const { PORT } = process.env;
 
 const app = express();
 
