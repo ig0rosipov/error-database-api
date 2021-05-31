@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const errorHandler = require('./middlewares/errorHandler');
 
 mongoose.connect('mongodb://localhost:27017/error-database',
   {
@@ -14,6 +15,8 @@ const { PORT } = process.env;
 const app = express();
 
 app.use(express.json());
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
