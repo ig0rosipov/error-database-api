@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const Machine = require('./machine');
 
 const faultSchema = new mongoose.Schema({
   name: {
@@ -22,7 +21,8 @@ const faultSchema = new mongoose.Schema({
     default: [],
   },
   machine: {
-    type: Machine,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Machine',
   },
 });
 

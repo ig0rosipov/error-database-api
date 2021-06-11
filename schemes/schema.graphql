@@ -1,0 +1,19 @@
+  type Machine {
+    _id: String,
+    name: String,
+  }
+
+  type Fault {
+    _id: String,
+    name: String,
+    description: String,
+    solution: String,
+    images: [String],
+    machine: Machine,
+  }
+
+  type Query {
+    faults: [Fault],
+  }
+
+  mutation AddFault(fault: Fault): Fault
