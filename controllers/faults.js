@@ -5,29 +5,36 @@ const BadRequestError = require('../errors/bad-request');
 module.exports.getAllFaults = () => Fault.find({})
   .then((faultList) => faultList)
   .catch((err) => err);
+
 module.exports.addFault = ({
   name, description, solution, images, machineName,
-}) => {
-  // console.log(item);
-  Machine.findOne({
-    name: machineName,
+}) => Machine.findOne({ name: machineName })
+  .then((machineData) => {
+    if (!machineData) {
+      throw new BadRequestError('Нет такого оборудования');
+    }
+    return Fault.create({
+      name,
+      description,
+      solution,
+      images,
+      machine: {
+        _id: machineData._id,
+        name: machineData.name,
+      },
+    });
   })
-    .then((machineData) => {
-      console.log(machineData);
-      if (machineData === null) {
-        throw new BadRequestError('Нет такого оборудования');
-      }
-      return Fault.create({
-        name,
-        description,
-        solution,
-        images,
-        machine: machineData,
-      }).lean();
-    })
-    .then((fault) => {
-      console.log(fault);
-      return fault;
-    })
-    .catch((err) => err);
-};
+  .then((fault) => ({
+    __typename: 'Fault',
+    ...fault,
+
+  }))
+  .then((result) => ({
+    __typename: result.__typename,
+    ...result._doc,
+  }))
+  .catch((err) => ({
+    __typename: 'ErrorMessage',
+    message: err.message,
+    statusCode: err.statusCode,
+  }));

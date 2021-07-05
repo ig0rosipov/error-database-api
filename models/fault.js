@@ -20,10 +20,16 @@ const faultSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
-  machine: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Machine',
-  },
+  machine:
+  {
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Machine',
+      required: true,
+    },
+    name: String,
+  }
+  ,
 });
 
 module.exports = mongoose.model('fault', faultSchema);

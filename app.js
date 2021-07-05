@@ -6,6 +6,7 @@ const { graphqlHTTP } = require('express-graphql');
 const errorHandler = require('./middlewares/errorHandler');
 const { getAllFaults, addFault } = require('./controllers/faults');
 const { addMachine } = require('./controllers/machines');
+const { mainSchema } = require('./schemes/schema');
 
 const { PORT } = process.env;
 
@@ -17,44 +18,7 @@ mongoose.connect('mongodb://localhost:27017/error-database',
     useUnifiedTopology: true,
   });
 
-const schema = buildSchema(`
-
-  type Machine {
-    _id: objectId
-    name: String
-  }
-
-  type Fault {
-    _id: objectId
-    name: String
-    description: String
-    solution: String
-    images: [String]
-    machine: Machine
-  }
-
-  type Query {
-    faults: [Fault]
-  }
-
-  input NewFault {
-    name: String
-    description: String
-    solution: String
-    images: [String]
-    machineName: String
-  }
-
-  type Mutation {
-    addNewFault(
-      name: String
-      description: String
-      solution: String
-      images: [String]
-      machineName: String): Fault
-    addNewMachine(name: String): Machine
-  }
-`);
+const schema = buildSchema(mainSchema);
 
 const root = {
   faults: () => getAllFaults().then((data) => data),
