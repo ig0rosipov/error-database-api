@@ -5,7 +5,8 @@ const { buildSchema } = require('graphql');
 const { graphqlHTTP } = require('express-graphql');
 const errorHandler = require('./middlewares/errorHandler');
 const { getAllFaults, addFault } = require('./controllers/faults');
-const { addMachine } = require('./controllers/machines');
+const { getAllMachines, addMachine } = require('./controllers/machines');
+const { getAllArticles, addArticle } = require('./controllers/articles');
 const { mainSchema } = require('./schemes/schema');
 
 const { PORT } = process.env;
@@ -21,13 +22,18 @@ mongoose.connect('mongodb://localhost:27017/error-database',
 const schema = buildSchema(mainSchema);
 
 const root = {
-  faults: () => getAllFaults().then((data) => data),
+  faults: () => getAllFaults(),
+  machines: () => getAllMachines(),
+  articles: () => getAllArticles(),
   addNewFault: ({
     name, description, solution, images, machineName,
   }) => addFault({
     name, description, solution, images, machineName,
   }),
   addNewMachine: ({ name }) => addMachine({ name }),
+  addNewArticle: ({
+    name, articleNumber, machineName,
+  }) => addArticle({ name, articleNumber, machineName }),
 };
 const app = express();
 

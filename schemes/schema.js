@@ -15,14 +15,15 @@ type Fault {
 
 type Query {
   faults: [Fault!]!
+  articles: [Article!]!
+  machines: [Machine!]!
 }
 
-input FaultInput {
-  name: String
-  description: String
-  solution: String
-  images: [String]
-  machineName: String
+type Article {
+  _id: ID!
+  name: String!
+  articleNumber: String!
+  machine: Machine
 }
 
 type ErrorMessage {
@@ -31,6 +32,7 @@ type ErrorMessage {
 }
 
 union FaultResponse = Fault | ErrorMessage
+union ArticleResponse = Article | ErrorMessage
 
 type Mutation {
   addNewFault(
@@ -40,5 +42,10 @@ type Mutation {
     images: [String]
     machineName: String ): FaultResponse!
   addNewMachine(name: String): Machine
+  addNewArticle(
+    name: String
+    articleNumber: String
+    machineName: String
+  ): ArticleResponse!
 }
 `;
