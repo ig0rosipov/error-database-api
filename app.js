@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 const { buildSchema } = require('graphql');
 const { graphqlHTTP } = require('express-graphql');
 const errorHandler = require('./middlewares/errorHandler');
@@ -36,6 +37,7 @@ const root = {
   }) => addArticle({ name, articleNumber, machineName }),
 };
 const app = express();
+app.use(bodyParser.json({ limit: '50mb' }));
 
 app.use('/graphql', graphqlHTTP({
   schema,
