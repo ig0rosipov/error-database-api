@@ -1,4 +1,3 @@
-const CyrillicToTranslit = require('cyrillic-to-translit-js');
 const base64Img = require('base64-img');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
@@ -6,8 +5,6 @@ const path = require('path');
 const Fault = require('../models/fault');
 const Machine = require('../models/machine');
 const BadRequestError = require('../errors/bad-request');
-
-const cyrillicToTranslit = new CyrillicToTranslit();
 
 const convertToImg = (file, filePath, name) => new Promise((resolve, reject) => {
   base64Img.img(file, filePath, name, (err, filepath) => {
@@ -17,7 +14,6 @@ const convertToImg = (file, filePath, name) => new Promise((resolve, reject) => 
     reject(err);
   });
 });
-
 const assetsPath = path.join(path.dirname(__dirname), '/assets');
 const imagesPath = path.join(assetsPath, '/images');
 
@@ -32,12 +28,25 @@ module.exports.addFault = ({
     if (!machineData) {
       throw new BadRequestError('Нет такого оборудования');
     }
+    // создается новая запись об ошибке.
+    return Fault.create({
+      name,
+      description,
+      solution,
+      machine: {
+        _id: machineData._id,
+        name: machineData.name,
+      },
+    });
+  })
+  .then((addedFault) => {
+    // проверяется есть ли нужные директории. Если нет, то создаются. Возвращает Добавленную ошибку.
     if (fs.existsSync(assetsPath)) {
       if (fs.existsSync(imagesPath)) {
-        return machineData;
+        return addedFault;
       }
       return fsPromises.mkdir(imagesPath)
-        .then(() => machineData)
+        .then(() => addedFault)
         .catch((err) => ({
           path: imagesPath,
           isCreated: false,
@@ -52,42 +61,39 @@ module.exports.addFault = ({
         });
       })
       .then(() => fsPromises.mkdir(imagesPath))
-      .then(() => machineData)
+      .then(() => addedFault)
       .catch((err) => ({
         path: imagesPath,
         isCreated: false,
         err,
       }));
-  }).then((machineData) => {
-    const directories = images.map((image, index) => convertToImg(image, `${imagesPath}/${cyrillicToTranslit.transform(name, '_')}`, `${cyrillicToTranslit.transform(name, '_')}_${index}`));
+  })
+  .then((addedFault) => {
+    // когда папки созданы - dataURL конвертируется в изображение и помещается в нужную папку.
+    // Возвращает пути и запись об ошибке которая прокидывается через then'ы.
+    const directories = images.map((image, index) => convertToImg(image, `${imagesPath}/${addedFault._id}`, `${addedFault._id}_${index}`));
     return Promise.all(directories).then((dirs) => ({
       dirs,
-      machineData,
+      addedFault,
     }));
   })
-  .then((data) => Fault.create({
-    name,
-    description,
-    solution,
-    images: data.dirs,
-    machine: {
-      _id: data.machineData._id,
-      name: data.machineData.name,
-    },
-  })
-    .then((fault) => ({
-      __typename: 'Fault',
-      ...fault,
-    }))
-    .then((result) => ({
-      __typename: result.__typename,
-      ...result._doc,
-    }))
-    .catch((err) => {
-      console.log(err);
-      return ({
-        __typename: 'ErrorMessage',
-        message: err.message,
-        statusCode: err.statusCode,
-      });
-    }));
+  .then((data) => Fault.findByIdAndUpdate(
+    // Запись об ошибке редактируется, добавляя относительные пути к изображениям в поле images.
+    data.addedFault._id,
+    { images: data.dirs },
+    { new: true },
+  ))
+  .then((updatedFault) => ({
+    // Добавляется __typename в финальный объект. GraphQL требует.
+    __typename: 'Fault',
+    ...updatedFault,
+  }))
+  .then((result) => ({
+    __typename: result.__typename,
+    ...result._doc,
+  }))
+  .catch((err) => ({
+    __typename: 'ErrorMessage',
+    message: err.message,
+    statusCode: err.statusCode,
+  }));
