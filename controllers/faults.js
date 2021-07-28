@@ -8,18 +8,33 @@ const BadRequestError = require('../errors/bad-request');
 
 const convertToImg = (file, filePath, name) => new Promise((resolve, reject) => {
   base64Img.img(file, filePath, name, (err, filepath) => {
-    const relativePathArray = filepath.split('\\').slice(-3);
+    const relativePathArray = filepath.split('\\').slice(-4);
     relativePathArray.unshift('.');
     resolve(relativePathArray.join('/'));
     reject(err);
   });
 });
+
+const convertToBase64 = (filePath) => new Promise((resolve, reject) => {
+  base64Img.base64(filePath, (err, data) => {
+    resolve(data);
+    reject(err);
+  });
+});
+
 const assetsPath = path.join(path.dirname(__dirname), '/assets');
 const imagesPath = path.join(assetsPath, '/images');
 
-module.exports.getAllFaults = () => Fault.find({})
-  .then((faultList) => faultList)
-  .catch((err) => err);
+// module.exports.getAllFaults = () => Fault.find({}).lean()
+//   // .then((faultList) => faultList)
+//   .then((faultList) => faultList.map((fault) => Promise.all(fault.images.map(
+//     (absolutePath) => convertToBase64(
+//       path.join(path.dirname(__dirname), absolutePath),
+//     ),
+//   ))))
+//   .then((data) => {
+//     console.log(faultList);
+//   });
 
 module.exports.addFault = ({
   name, description, solution, images, machineName,
