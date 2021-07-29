@@ -25,16 +25,28 @@ const convertToBase64 = (filePath) => new Promise((resolve, reject) => {
 const assetsPath = path.join(path.dirname(__dirname), '/assets');
 const imagesPath = path.join(assetsPath, '/images');
 
-// module.exports.getAllFaults = () => Fault.find({}).lean()
-//   // .then((faultList) => faultList)
-//   .then((faultList) => faultList.map((fault) => Promise.all(fault.images.map(
-//     (absolutePath) => convertToBase64(
-//       path.join(path.dirname(__dirname), absolutePath),
-//     ),
-//   ))))
-//   .then((data) => {
-//     console.log(faultList);
-//   });
+module.exports.getAllFaults = () => {
+  const faults = Fault.find({}).lean(); // Получаем список неисправностей.
+  const directories = faults
+    .then((faultList) => faultList.map(
+      (fault) => Promise.all(fault.images.map(
+        (absolutePath) => convertToBase64(
+          path.join(path.dirname(__dirname), absolutePath),
+        ),
+      )),
+    ))
+    .then((data) => Promise.all(data)).then((data) => data);
+  // Из списка неисправностей в каждом объекте из поля images получаем абсолютные пути изображений
+  // после чего сразу же конвертируем их в dataURL и возвращаем Promise с массивами изображений.
+
+  return Promise.all([faults, directories]).then((data) => {
+    const [faultList, images] = data;
+    return faultList.map((fault, index) => ({
+      ...fault,
+      images: images[index],
+    }));
+  });
+};
 
 module.exports.addFault = ({
   name, description, solution, images, machineName,
@@ -97,15 +109,11 @@ module.exports.addFault = ({
     data.addedFault._id,
     { images: data.dirs },
     { new: true },
-  ))
+  ).lean())
   .then((updatedFault) => ({
     // Добавляется __typename в финальный объект. GraphQL требует.
     __typename: 'Fault',
     ...updatedFault,
-  }))
-  .then((result) => ({
-    __typename: result.__typename,
-    ...result._doc,
   }))
   .catch((err) => ({
     __typename: 'ErrorMessage',
